@@ -37,6 +37,7 @@ initConfigKey "prerelease" "false" "${USER_CONFIG_FILE}"
 initConfigKey "bootwait" "10" "${USER_CONFIG_FILE}"
 initConfigKey "bootipwait" "10" "${USER_CONFIG_FILE}"
 initConfigKey "kernelway" "power" "${USER_CONFIG_FILE}"
+initConfigKey "poweroffdisplay" "true" "${USER_CONFIG_FILE}"
 initConfigKey "kernelpanic" "5" "${USER_CONFIG_FILE}"
 initConfigKey "odp" "false" "${USER_CONFIG_FILE}"
 initConfigKey "hddsort" "false" "${USER_CONFIG_FILE}"
@@ -100,6 +101,7 @@ if [ ! "LOCALBUILD" = "${LOADER_DISK}" ]; then
       sleep 1
     fi
     [ "${ETH::3}" = "eth" ] && ethtool -s ${ETH} wol g 2>/dev/null || true
+    [ "${ETH::3}" = "eth" ] && ethtool -K ${ETH} rxhash off 2>/dev/null || true
   done
 fi
 

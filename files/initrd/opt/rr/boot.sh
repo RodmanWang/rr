@@ -334,6 +334,14 @@ else
   # Clear logs for dbgutils addons
   rm -rf "${PART1_PATH}/logs" >/dev/null 2>&1 || true
 
+  # Unload all network interfaces
+  for D in $(readlink /sys/class/net/*/device/driver); do modprobe -r --force "$(basename ${D})" 2>/dev/null || true; done
+
+  # Unload all graphics drivers
+  POWEROFFDISPLAY="$(readConfigKey "poweroffdisplay" "${USER_CONFIG_FILE}")"
+  [ "${POWEROFFDISPLAY}" = "true" ] && for D in $(lsmod | grep -E '^(nouveau|amdgpu|radeon|i915)' | awk '{print $1}'); do modprobe -r --force "${D}" 2>/dev/null || true; done
+
+  # Reboot
   KERNELWAY="$(readConfigKey "kernelway" "${USER_CONFIG_FILE}")"
   [ "${KERNELWAY}" = "kexec" ] && kexec -a -e || poweroff
   exit 0

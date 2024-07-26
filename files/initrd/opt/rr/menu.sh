@@ -42,6 +42,7 @@ PRERELEASE="$(readConfigKey "prerelease" "${USER_CONFIG_FILE}")"
 BOOTWAIT="$(readConfigKey "bootwait" "${USER_CONFIG_FILE}")"
 BOOTIPWAIT="$(readConfigKey "bootipwait" "${USER_CONFIG_FILE}")"
 KERNELWAY="$(readConfigKey "kernelway" "${USER_CONFIG_FILE}")"
+POWEROFFDISPLAY="$(readConfigKey "poweroffdisplay" "${USER_CONFIG_FILE}")"
 KERNELPANIC="$(readConfigKey "kernelpanic" "${USER_CONFIG_FILE}")"
 ODP="$(readConfigKey "odp" "${USER_CONFIG_FILE}")" # official drivers priorities
 HDDSORT="$(readConfigKey "hddsort" "${USER_CONFIG_FILE}")"
@@ -2345,10 +2346,7 @@ function advancedMenu() {
       echo "i \"$(TEXT "Timeout of get ip in boot:") \Z4${BOOTIPWAIT}\Zn\"" >>"${TMP_PATH}/menu"
       echo "w \"$(TEXT "Timeout of boot wait:") \Z4${BOOTWAIT}\Zn\"" >>"${TMP_PATH}/menu"
       echo "k \"$(TEXT "kernel switching method:") \Z4${KERNELWAY}\Zn\"" >>"${TMP_PATH}/menu"
-      if false; then # Some GPU have compatibility issues, so this function is temporarily disabled. RR_CMDLINE= ... nomodeset
-        checkCmdline "rr_cmdline" "nomodeset" && POWEROFFDISPLAY="false" || POWEROFFDISPLAY="true"
-        echo "7 \"$(TEXT "Power off display after boot: ") \Z4${POWEROFFDISPLAY}\Zn\"" >>"${TMP_PATH}/menu"
-      fi
+      echo "7 \"$(TEXT "Power off display after boot: ") \Z4${POWEROFFDISPLAY}\Zn\"" >>"${TMP_PATH}/menu"
     fi
     echo "n \"$(TEXT "Reboot on kernel panic:") \Z4${KERNELPANIC}\Zn\"" >>"${TMP_PATH}/menu"
     if [ -n "$(ls /dev/mmcblk* 2>/dev/null)" ]; then
@@ -2475,15 +2473,8 @@ function advancedMenu() {
       NEXT="k"
       ;;
     7)
-      DIALOG --title "$(TEXT "Advanced")" \
-        --yesno "$(TEXT "Modifying this item requires a reboot, continue?")" 0 0
-      RET=$?
-      [ ${RET} -ne 0 ] && continue
-      checkCmdline "rr_cmdline" "nomodeset" && delCmdline "rr_cmdline" "nomodeset" || addCmdline "rr_cmdline" "nomodeset"
-      DIALOG --title "$(TEXT "Advanced")" \
-        --infobox "$(TEXT "Reboot to RR")" 0 0
-      rebootTo config
-      exit 0
+      [ "${POWEROFFDISPLAY}" = "false" ] && POWEROFFDISPLAY='true' || POWEROFFDISPLAY='false'
+      writeConfigKey "poweroffdisplay" "${POWEROFFDISPLAY}" "${USER_CONFIG_FILE}"
       NEXT="7"
       ;;
     n)
