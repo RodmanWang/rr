@@ -12,18 +12,6 @@ loaderIsConfigured || die "$(TEXT "Loader is not configured!")"
 # Check if machine has EFI
 [ -d /sys/firmware/efi ] && EFI=1 || EFI=0
 
-# Proc open nvidia driver when booting
-NVPCI_ADDR=$(lspci -nd 10de: | grep -e 0300 -e 0302 | awk '{print $1}')
-if [ -n "${NVPCI_ADDR}" ]; then
-  modprobe -r nouveau || true
-  NVDEV_PATH=$(find /sys/devices -name *${NVPCI_ADDR} | grep -v supplier)
-  for DEV_PATH in ${NVDEV_PATH}; do
-    if [ -e ${DEV_PATH}/reset ]; then
-      echo 1 >${DEV_PATH}/reset || true
-    fi
-  done
-fi
-
 BUS=$(getBus "${LOADER_DISK}")
 
 # Print text centralized
@@ -339,7 +327,13 @@ else
 
   # Unload all graphics drivers
   POWEROFFDISPLAY="$(readConfigKey "poweroffdisplay" "${USER_CONFIG_FILE}")"
+  # [ "${POWEROFFDISPLAY}" = "true" ] && for D in $(readlink /sys/class/drm/*/device/driver); do modprobe -r --force "$(basename ${D})" 2>/dev/null || true; done
   [ "${POWEROFFDISPLAY}" = "true" ] && for D in $(lsmod | grep -E '^(nouveau|amdgpu|radeon|i915)' | awk '{print $1}'); do modprobe -r --force "${D}" 2>/dev/null || true; done
+
+  # Proc open nvidia driver when booting
+  [ "${POWEROFFDISPLAY}" = "true" ] && for I in $(find /sys/devices -name uevent -exec bash -c 'cat {} 2>/dev/null | grep -Eq "PCI_CLASS=0?30[0|1|2]00" && dirname {}' \;); do
+    [ -e ${I}/reset ] && cat ${I}/vendor >/dev/null | grep -iq 0x10de && echo 1 >${I}/reset || true
+  done
 
   # Reboot
   KERNELWAY="$(readConfigKey "kernelway" "${USER_CONFIG_FILE}")"
